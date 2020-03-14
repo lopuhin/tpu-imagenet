@@ -32,11 +32,13 @@ Training
 Example training command, assuming Kaggle notebook environment with TPU enabled,
 (to be updated to use multiple datasets)::
 
+    from pathlib import Path
     from kaggle_datasets import KaggleDatasets
-    gcs_path = KaggleDatasets().get_gcs_path()
-
+    gcs_paths = [KaggleDatasets().get_gcs_path(p.name)
+                 for p in Path('/kaggle/input/').iterdir()]
     ! train.py {gcs_path}/imagenet-tfrec-320 \
         --n-classes 1000 --n-train-samples 1281167 \
         --batch-size 512 --mixed
 
-You can check exact dataset paths with ``! gsutil ls {gcs_path}``.
+You can check exact dataset paths with ``! gsutil ls SOME_PATH``,
+in case your tfrec files are not on the top level.
