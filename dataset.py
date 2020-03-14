@@ -7,6 +7,7 @@ import tensorflow as tf
 import tqdm
 
 from prepare_tfrecords import read_tfrecord
+from transforms import resize_and_crop_image
 
 
 def build_dataset(tfrec_root: Path, image_size: Tuple[int, int]):
@@ -25,29 +26,6 @@ def build_dataset(tfrec_root: Path, image_size: Tuple[int, int]):
         num_parallel_calls=AUTO)
     dataset = dataset.shuffle(2048)
     return dataset
-
-
-def resize_and_crop_image(image, label, filename, target_size: Tuple[int, int]):
-    """ Resize and crop using "fill" algorithm: make sure the resulting image
-    is cut out from the source image so that it fills the target_size
-    entirely with no black bars and a preserved aspect ratio.
-    """
-    h, w = _image_hw(image)
-    th, tw = target_size
-    image = tf.cond(
-        (w * th) / (h * tw) < 1,
-        lambda: tf.image.resize(image, [h * tw/w, w * tw/w]),
-        lambda: tf.image.resize(image, [h * th/h, w * th/h])
-    )
-    nh, nw = _image_hw(image)
-    image = tf.image.crop_to_bounding_box(
-        image, (nh - th) // 2, (nw - tw) // 2, th, tw)
-    return image, label, filename
-
-
-def _image_hw(image):
-    shape = tf.shape(image)
-    return shape[0], shape[1]
 
 
 def main():

@@ -1,17 +1,27 @@
 #!/usr/bin/env python3
 import argparse
+from functools import partial
 from pathlib import Path
 from typing import Dict
 
 import tensorflow as tf
 import tqdm
 
+from transforms import resize_image
+
 
 def read_jpeg_and_label(filename):
     image_data = tf.io.read_file(filename)
+    image = tf.image.decode_jpeg(image_data)
     label = tf.strings.split(
         tf.expand_dims(filename, axis=-1), sep='/').values[-2]
-    return image_data, label, filename
+    return image, label, filename
+
+
+def compress_image(image, label, filename):
+    image = tf.cast(image, tf.uint8)
+    image = tf.image.encode_jpeg(image, quality=90, optimize_size=True)
+    return image, label, filename
 
 
 def to_tfrecord(image_data: bytes, class_num: int, filename: bytes) -> tf.train.Example:
@@ -42,6 +52,17 @@ def get_class_map(train_root: Path) -> Dict[str, int]:
             if path.is_dir()}
 
 
+def prepare_dataset(root: Path, max_size: int):
+    dataset = tf.data.Dataset.list_files(
+        str(root / '*/*.JPEG'), shuffle=True, seed=42)
+    AUTO = tf.data.experimental.AUTOTUNE
+    dataset = dataset.map(read_jpeg_and_label, num_parallel_calls=AUTO)
+    dataset = dataset.map(partial(resize_image, max_size=max_size),
+                          num_parallel_calls=AUTO)
+    dataset = dataset.map(compress_image, num_parallel_calls=AUTO)
+    return dataset
+
+
 def main():
     parser = argparse.ArgumentParser()
     arg = parser.add_argument
@@ -49,7 +70,7 @@ def main():
         help='path to the root folder with "train" and "val" subfolders')
     arg('dst', type=Path, help='target for tfrecord files')
     arg('--n-shards', type=int, required=True)
-    # arg('--max-size', type=int, default=320)
+    arg('--max-size', type=int, default=500)
     args = parser.parse_args()
 
     max_shards = 1000
@@ -68,11 +89,7 @@ def main():
     for root, writers in [(valid_root, valid_writers),
                           (train_root, train_writers)]:
         try:
-            dataset = tf.data.Dataset.list_files(
-                str(root / '*/*.JPEG'), shuffle=True, seed=42)
-            dataset = dataset.map(
-                read_jpeg_and_label,
-                num_parallel_calls=tf.data.experimental.AUTOTUNE)
+            dataset = prepare_dataset(root, max_size=args.max_size)
             for i, (image_data, label, filename) in enumerate(tqdm.tqdm(dataset)):
                 class_num = class_map[label.numpy().decode('utf8')]
                 example = to_tfrecord(
