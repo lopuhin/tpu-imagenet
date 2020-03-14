@@ -16,7 +16,7 @@ def read_jpeg_and_label(filename):
     image = tf.cond(
         tf.shape(image)[2] == 1,
         lambda: tf.image.grayscale_to_rgb(image),
-        lambda: tf.identity(image))
+        lambda: image[:, :, :3])
     label = tf.strings.split(
         tf.expand_dims(filename, axis=-1), sep='/').values[-2]
     return image, label, filename
