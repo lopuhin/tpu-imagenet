@@ -12,7 +12,7 @@ def build_dataset(tfrec_root: Path):
     options_no_order.experimental_deterministic = False
     AUTO = tf.data.experimental.AUTOTUNE
     dataset = tf.data.TFRecordDataset(
-        [str(p) for p in tfrec_root.glob('*.tfrec')],
+        [str(p) for p in tfrec_root.glob('train-*.tfrec')],
         num_parallel_reads=AUTO)
     dataset = dataset.with_options(options_no_order)
     dataset = dataset.map(read_tfrecord, num_parallel_calls=AUTO)

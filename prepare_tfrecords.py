@@ -56,24 +56,29 @@ def main():
     train_root = args.src / 'train'
     class_map = get_class_map(train_root)
     args.dst.mkdir(exist_ok=True, parents=True)
-    shard_writers = [
+    train_writers = [
         tf.io.TFRecordWriter(str(args.dst / f'train-{shard:03d}.tfrec'))
         for shard in range(args.n_shards)]
-    try:
-        dataset = tf.data.Dataset.list_files(
-            str(train_root / '*/*.JPEG'), shuffle=True, seed=42)
-        dataset = dataset.map(
-            read_jpeg_and_label,
-            num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        for i, (image_data, label) in enumerate(tqdm.tqdm(dataset)):
-            shard = i % args.n_shards
-            class_num = class_map[label.numpy().decode('utf8')]
-            example = to_tfrecord(image_data.numpy(), class_num)
-            shard_writers[shard].write(example.SerializeToString())
+    valid_writers = [tf.io.TFRecordWriter(str(args.dst / 'val.tfrec'))]
+    valid_root = args.src / 'val'
 
-    finally:
-        for w in shard_writers:
-            w.close()
+    for root, writers in [(valid_root, valid_writers),
+                          (train_root, train_writers)]:
+        try:
+            dataset = tf.data.Dataset.list_files(
+                str(root / '*/*.JPEG'), shuffle=True, seed=42)
+            dataset = dataset.map(
+                read_jpeg_and_label,
+                num_parallel_calls=tf.data.experimental.AUTOTUNE)
+            for i, (image_data, label) in enumerate(tqdm.tqdm(dataset)):
+                class_num = class_map[label.numpy().decode('utf8')]
+                example = to_tfrecord(image_data.numpy(), class_num)
+                writer = writers[i % len(writers)]
+                writer.write(example.SerializeToString())
+
+        finally:
+            for w in writers:
+                w.close()
     
 
 if __name__ == '__main__':
