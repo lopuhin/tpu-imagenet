@@ -20,6 +20,10 @@ def main():
     arg('--lr-sustain-epochs', type=int, default=20)
     arg('--lr-warmup-epochs', type=int, default=5)
 
+    # TODO move to dataset.json created during pre-processing
+    arg('--n-classes', type=int, required=True)
+    arg('--n-train-samples', type=int, required=True)
+
     arg('--xla', action='store_true', help='enable XLA')
     arg('--mixed', action='store_true', help='enable mixed precision')
     args = parser.parse_args()
@@ -38,8 +42,8 @@ def main():
         drop_filename=True,
         ) for is_train in [True, False]]
 
-    # TODO n_classes: store it somewhere
-    model = build_model(strategy, image_size=image_size, n_classes=100)
+    model = build_model(
+        strategy, image_size=image_size, n_classes=args.n_classes)
     lr_schedule = build_lr_schedule(
         lr_max=args.lr,
         lr_warmup_epochs=args.lr_warmup_epochs,
@@ -54,7 +58,7 @@ def main():
     model.fit(
         train_dataset,
         validation_data=valid_dataset,
-        steps_per_epoch=10000 // batch_size,  # TODO get number of examples
+        steps_per_epoch=args.n_train_samples // batch_size,
         epochs=args.epochs,
         callbacks=[lr_callback],
     )
