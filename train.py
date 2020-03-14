@@ -16,19 +16,19 @@ def main():
         nargs='+')
     arg('--image-size', type=int, default=224)
 
-    arg('--batch-size', type=int, default=32, help='per device')
-    arg('--lr', type=float, default=1e-2)
-    arg('--lr-decay', type=float, default=0.92)
-    arg('--epochs', type=int, default=100)
+    arg('--batch-size', type=int, default=512, help='per device')
+    arg('--lr', type=float, default=1.6)
+    arg('--lr-decay', type=float, default=0.9)
+    arg('--epochs', type=int, default=110)
     arg('--lr-sustain-epochs', type=int, default=20)
     arg('--lr-warmup-epochs', type=int, default=5)
 
     # TODO move to dataset.json created during pre-processing
-    arg('--n-classes', type=int, required=True)
-    arg('--n-train-samples', type=int, required=True)
+    arg('--n-classes', type=int, default=1000)
+    arg('--n-train-samples', type=int, default=1281167)
 
-    arg('--xla', action='store_true', help='enable XLA')
-    arg('--mixed', action='store_true', help='enable mixed precision')
+    arg('--xla', type=int, default=0, help='enable XLA')
+    arg('--mixed', type=int, default=1, help='enable mixed precision')
     args = parser.parse_args()
 
     strategy, tpu = get_strategy()
@@ -96,7 +96,7 @@ def build_lr_schedule(
         lr_decay: float,
     ):
     def get_lr(epoch: int):
-        lr_min = lr_start = lr_max / 10
+        lr_min = lr_start = lr_max / 100
         if epoch < lr_warmup_epochs:
             lr = (lr_max - lr_start) / lr_warmup_epochs * epoch + lr_start
         elif epoch < lr_warmup_epochs + lr_sustain_epochs:
