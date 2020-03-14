@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import argparse
-from functools import partial
 from typing import Tuple
 
 import tensorflow as tf
@@ -16,7 +15,7 @@ def main():
 
     arg('--batch-size', type=int, default=32, help='per device')
     arg('--lr', type=float, default=1e-2)
-    arg('--lr-decay', type=float, default=0.8)
+    arg('--lr-decay', type=float, default=0.92)
     arg('--epochs', type=int, default=100)
     arg('--lr-sustain-epochs', type=int, default=20)
     arg('--lr-warmup-epochs', type=int, default=5)
@@ -41,14 +40,16 @@ def main():
 
     # TODO n_classes: store it somewhere
     model = build_model(strategy, image_size=image_size, n_classes=100)
+    lr_schedule = build_lr_schedule(
+        lr_max=args.lr,
+        lr_warmup_epochs=args.lr_warmup_epochs,
+        lr_sustain_epochs=args.lr_sustain_epochs,
+        lr_decay=args.lr_decay,
+    )
     lr_callback = tf.keras.callbacks.LearningRateScheduler(
-        partial(
-            get_lr,
-            lr_warmup_epochs=args.lr_warmup_epochs,
-            lr_sustain_epochs=args.lr_sustain_epochs,
-            lr_decay=args.lr_decay,
-        ), verbose=True)
-    # TODO preprocessing!
+        lr_schedule, verbose=True)
+
+    # TODO "imagenet" preprocessing
     # TODO L2 weight decay
     model.fit(
         train_dataset,
@@ -81,23 +82,24 @@ def build_model(strategy, image_size: Tuple[int, int], n_classes: int):
     return model
 
 
-def get_lr(
-        epoch: int,
+def build_lr_schedule(
         lr_max: float,
         lr_warmup_epochs: int,
         lr_sustain_epochs: int,
         lr_decay: float,
-        ):
-    lr_min = lr_start = lr_max / 10
-    if epoch < lr_warmup_epochs:
-        lr = (lr_max - lr_start) / lr_warmup_epochs * epoch + lr_start
-    elif epoch < lr_warmup_epochs + lr_sustain_epochs:
-        lr = lr_max
-    else:
-        lr = ((lr_max - lr_min) *
-               lr_decay ** (epoch - lr_warmup_epochs - lr_sustain_epochs) +
-               lr_min)
-    return lr
+    ):
+    def get_lr(epoch: int):
+        lr_min = lr_start = lr_max / 10
+        if epoch < lr_warmup_epochs:
+            lr = (lr_max - lr_start) / lr_warmup_epochs * epoch + lr_start
+        elif epoch < lr_warmup_epochs + lr_sustain_epochs:
+            lr = lr_max
+        else:
+            lr = ((lr_max - lr_min) *
+                   lr_decay ** (epoch - lr_warmup_epochs - lr_sustain_epochs) +
+                   lr_min)
+        return lr
+    return get_lr
 
 
 def get_strategy():
