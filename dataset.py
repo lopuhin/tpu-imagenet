@@ -22,7 +22,7 @@ def build_dataset(
     options_no_order = tf.data.Options()
     options_no_order.experimental_deterministic = False
     AUTO = tf.data.experimental.AUTOTUNE
-    pattern = '/train-*.tfrec' if is_train else '/valid.tfrec'
+    pattern = '/train-*.tfrec' if is_train else '/val.tfrec'
     dataset = tf.data.TFRecordDataset(
         tf.io.gfile.glob(tfrec_root.rstrip('/') + pattern),
         num_parallel_reads=AUTO)

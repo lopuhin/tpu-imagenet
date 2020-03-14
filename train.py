@@ -34,7 +34,7 @@ def main():
         args.tfrec_path,
         is_train=is_train,
         image_size=image_size,
-        cache=is_train,
+        cache=not is_train,
         batch_size=batch_size,
         drop_filename=True,
         ) for is_train in [True, False]]
