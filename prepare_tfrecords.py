@@ -11,13 +11,14 @@ def read_jpeg_and_label(filename):
     image_data = tf.io.read_file(filename)
     label = tf.strings.split(
         tf.expand_dims(filename, axis=-1), sep='/').values[-2]
-    return image_data, label
+    return image_data, label, filename
 
 
-def to_tfrecord(image_data: bytes, class_num: int) -> tf.train.Example:
+def to_tfrecord(image_data: bytes, class_num: int, filename: bytes) -> tf.train.Example:
     feature = {
         'image': tf.train.Feature(bytes_list=tf.train.BytesList(value=[image_data])),
         'class': tf.train.Feature(int64_list=tf.train.Int64List(value=[class_num])),
+        'filename': tf.train.Feature(bytes_list=tf.train.BytesList(value=[filename])),
     }
     return tf.train.Example(features=tf.train.Features(feature=feature))
 
@@ -26,11 +27,13 @@ def read_tfrecord(example):
     features = {
         'image': tf.io.FixedLenFeature([], tf.string),
         'class': tf.io.FixedLenFeature([], tf.int64),
+        'filename': tf.io.FixedLenFeature([], tf.string),
     }
     example = tf.io.parse_single_example(example, features)
     image = tf.image.decode_jpeg(example['image'])
     class_num = example['class']
-    return image, class_num
+    filename = example['filename']
+    return image, class_num, filename
 
 
 def get_class_map(train_root: Path) -> Dict[str, int]:
@@ -70,9 +73,10 @@ def main():
             dataset = dataset.map(
                 read_jpeg_and_label,
                 num_parallel_calls=tf.data.experimental.AUTOTUNE)
-            for i, (image_data, label) in enumerate(tqdm.tqdm(dataset)):
+            for i, (image_data, label, filename) in enumerate(tqdm.tqdm(dataset)):
                 class_num = class_map[label.numpy().decode('utf8')]
-                example = to_tfrecord(image_data.numpy(), class_num)
+                example = to_tfrecord(
+                    image_data.numpy(), class_num, filename.numpy())
                 writer = writers[i % len(writers)]
                 writer.write(example.SerializeToString())
 
