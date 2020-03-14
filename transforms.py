@@ -33,6 +33,10 @@ def resize_and_crop_image(image, label, filename, target_size: Tuple[int, int]):
     return image, label, filename
 
 
+def drop_filename(image, label, filename):
+    return image, label
+
+
 def _image_hw(image):
     shape = tf.shape(image)
     return shape[0], shape[1]

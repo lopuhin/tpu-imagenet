@@ -13,6 +13,10 @@ from transforms import resize_image
 def read_jpeg_and_label(filename):
     image_data = tf.io.read_file(filename)
     image = tf.image.decode_jpeg(image_data)
+    image = tf.cond(
+        tf.shape(image)[2] == 1,
+        lambda: tf.image.grayscale_to_rgb(image),
+        lambda: tf.identity(image))
     label = tf.strings.split(
         tf.expand_dims(filename, axis=-1), sep='/').values[-2]
     return image, label, filename
