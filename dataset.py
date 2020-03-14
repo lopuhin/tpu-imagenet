@@ -1,6 +1,6 @@
 import argparse
 from functools import partial
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 import tensorflow as tf
 import tqdm
@@ -10,7 +10,7 @@ import transforms
 
 
 def build_dataset(
-        tfrec_root: str,
+        tfrec_roots: List[str],
         image_size: Tuple[int, int],
         is_train: bool,
         batch_size: Optional[int] = None,
@@ -23,9 +23,10 @@ def build_dataset(
     options_no_order.experimental_deterministic = False
     AUTO = tf.data.experimental.AUTOTUNE
     pattern = '/train-*.tfrec' if is_train else '/val.tfrec'
-    dataset = tf.data.TFRecordDataset(
-        tf.io.gfile.glob(tfrec_root.rstrip('/') + pattern),
-        num_parallel_reads=AUTO)
+    tfrec_paths = []
+    for tfrec_root in tfrec_roots:
+        tfrec_paths.extend(tf.io.gfile.glob(tfrec_root.rstrip('/') + pattern))
+    dataset = tf.data.TFRecordDataset(tfrec_paths, num_parallel_reads=AUTO)
     dataset = dataset.with_options(options_no_order)
     dataset = dataset.map(read_tfrecord, num_parallel_calls=AUTO)
     dataset = dataset.map(
@@ -55,7 +56,7 @@ def main():
     args = parser.parse_args()
 
     dataset = build_dataset(
-        args.tfrec_root,
+        [args.tfrec_root],
         is_train=True,
         image_size=args.image_size,
         drop_filename=False,

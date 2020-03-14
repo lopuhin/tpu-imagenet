@@ -10,7 +10,10 @@ from dataset import build_dataset
 def main():
     parser = argparse.ArgumentParser()
     arg = parser.add_argument
-    arg('tfrec_path', help='path to folder with tfrecords')
+    arg('tfrec_roots',
+        help='path(s) to folder with tfrecords '
+             '(can be one or multiple gcs bucket paths as well)',
+        nargs='+')
     arg('--image-size', type=int, default=224)
 
     arg('--batch-size', type=int, default=32, help='per device')
@@ -34,7 +37,7 @@ def main():
     image_size = (args.image_size, args.image_size)
     batch_size = args.batch_size * strategy.num_replicas_in_sync
     train_dataset, valid_dataset = [build_dataset(
-        args.tfrec_path,
+        args.tfrec_roots,
         is_train=is_train,
         image_size=image_size,
         cache=not is_train,
