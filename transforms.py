@@ -30,6 +30,13 @@ def resize_and_crop_image(image, label, filename, target_size: Tuple[int, int]):
     nh, nw = _image_hw(image)
     image = tf.image.crop_to_bounding_box(
         image, (nh - th) // 2, (nw - tw) // 2, th, tw)
+    # explicit size needed for TPU
+    image = tf.reshape(image, [*target_size, 3])
+    return image, label, filename
+
+
+def normalize(image, label, filename):
+    image = tf.cast(image, tf.float32) / 255.0
     return image, label, filename
 
 

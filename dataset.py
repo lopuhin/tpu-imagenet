@@ -31,6 +31,7 @@ def build_dataset(
     dataset = dataset.map(
         partial(transforms.resize_and_crop_image, target_size=image_size),
         num_parallel_calls=AUTO)
+    dataset = dataset.map(transforms.normalize, num_parallel_calls=AUTO)
     if drop_filename:
         dataset = dataset.map(transforms.drop_filename, num_parallel_calls=AUTO)
     if is_train:
