@@ -7,9 +7,6 @@ import tensorflow as tf
 import tqdm
 
 
-AUTO = tf.data.experimental.AUTOTUNE
-
-
 def read_jpeg_and_label(filename):
     image_data = tf.io.read_file(filename)
     label = tf.strings.split(
@@ -23,6 +20,17 @@ def to_tfrecord(image_data: bytes, class_num: int) -> tf.train.Example:
         'class': tf.train.Feature(int64_list=tf.train.Int64List(value=[class_num])),
     }
     return tf.train.Example(features=tf.train.Features(feature=feature))
+
+
+def read_tfrecord(example):
+    features = {
+        'image': tf.io.FixedLenFeature([], tf.string),
+        'class': tf.io.FixedLenFeature([], tf.int64),
+    }
+    example = tf.io.parse_single_example(example, features)
+    image = tf.image.decode_jpeg(example['image'])
+    class_num = example['class']
+    return image, class_num
 
 
 def get_class_map(train_root: Path) -> Dict[str, int]:
@@ -54,7 +62,9 @@ def main():
     try:
         dataset = tf.data.Dataset.list_files(
             str(train_root / '*/*.JPEG'), shuffle=True, seed=42)
-        dataset = dataset.map(read_jpeg_and_label, num_parallel_calls=AUTO)
+        dataset = dataset.map(
+            read_jpeg_and_label,
+            num_parallel_calls=tf.data.experimental.AUTOTUNE)
         for i, (image_data, label) in enumerate(tqdm.tqdm(dataset)):
             shard = i % args.n_shards
             class_num = class_map[label.numpy().decode('utf8')]
