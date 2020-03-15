@@ -3,15 +3,20 @@ from typing import Tuple
 import tensorflow as tf
 
 
-def resize_image(image, label, filename, max_size: int):
-    """ Resize image to given maximal size, preserving aspect ratio.
+def resize_image_if_larger(image, label, filename, max_size: int):
+    """ Resize image to given maximal size, preserving aspect ratio,
+    also casts it to float32.
     """
     h, w = _image_hw(image)
+    image = tf.cast(image, tf.float32)
     image = tf.cond(
-        w > h,
-        lambda: tf.image.resize(image, [h * max_size/w, w * max_size/w]),
-        lambda: tf.image.resize(image, [h * max_size/h, w * max_size/h])
-    )
+        w > max_size or h > max_size,
+        lambda: tf.cond(
+            w > h,
+            lambda: tf.image.resize(image, [h * max_size/w, w * max_size/w]),
+            lambda: tf.image.resize(image, [h * max_size/h, w * max_size/h])
+        ),
+        lambda: image)
     return image, label, filename
 
 

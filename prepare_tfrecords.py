@@ -7,7 +7,7 @@ from typing import Dict
 import tensorflow as tf
 import tqdm
 
-from transforms import resize_image
+from transforms import resize_image_if_larger
 
 
 def read_jpeg_and_label(filename):
@@ -61,7 +61,7 @@ def prepare_dataset(root: Path, max_size: int):
         str(root / '*/*.JPEG'), shuffle=True, seed=42)
     AUTO = tf.data.experimental.AUTOTUNE
     dataset = dataset.map(read_jpeg_and_label, num_parallel_calls=AUTO)
-    dataset = dataset.map(partial(resize_image, max_size=max_size),
+    dataset = dataset.map(partial(resize_image_if_larger, max_size=max_size),
                           num_parallel_calls=AUTO)
     dataset = dataset.map(compress_image, num_parallel_calls=AUTO)
     return dataset
