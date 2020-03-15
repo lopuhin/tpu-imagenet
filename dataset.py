@@ -1,5 +1,4 @@
 import argparse
-from functools import partial
 from typing import Optional, Tuple, List
 
 import tensorflow as tf
@@ -20,8 +19,6 @@ def build_dataset(
         ):
     """ image_size is height, width tuple.
     """
-    options_no_order = tf.data.Options()
-    options_no_order.experimental_deterministic = False
     AUTO = tf.data.experimental.AUTOTUNE
     pattern = '/train-*.tfrec' if is_train else '/val.tfrec'
     tfrec_paths = []
@@ -29,15 +26,22 @@ def build_dataset(
         tfrec_paths.extend(tf.io.gfile.glob(tfrec_root.rstrip('/') + pattern))
     print('tfrec paths', tfrec_paths)
     dataset = tf.data.TFRecordDataset(tfrec_paths, num_parallel_reads=AUTO)
+    options_no_order = tf.data.Options()
+    options_no_order.experimental_deterministic = False
     dataset = dataset.with_options(options_no_order)
-    dataset = dataset.map(read_tfrecord, num_parallel_calls=AUTO)
-    dataset = dataset.map(
-        partial(transforms.resize_and_crop_image, target_size=image_size),
-        num_parallel_calls=AUTO)
-    dataset = dataset.map(
-        partial(transforms.normalize, dtype=dtype), num_parallel_calls=AUTO)
-    if drop_filename:
-        dataset = dataset.map(transforms.drop_filename, num_parallel_calls=AUTO)
+
+    def process(filename):
+        image, label, filename = read_tfrecord(filename)
+        image, label, filename = transforms.resize_and_crop_image(
+            image, label, filename, target_size=image_size)
+        image, label, filename = transforms.normalize(
+            image, label, filename, dtype=dtype)
+        result = (image, label)
+        if not drop_filename:
+            result += (filename,)
+        return result
+
+    dataset = dataset.map(process, num_parallel_calls=AUTO)
     if cache:
         dataset = dataset.cache()
     if is_train:
