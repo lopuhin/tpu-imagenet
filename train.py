@@ -43,7 +43,8 @@ def main():
         args.tfrec_roots,
         is_train=is_train,
         image_size=image_size,
-        cache=not is_train,
+        # cache=not is_train,
+        cache=True,  # FIXME
         batch_size=batch_size,
         drop_filename=True,
         dtype=dtype,

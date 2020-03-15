@@ -27,6 +27,7 @@ def build_dataset(
     tfrec_paths = []
     for tfrec_root in tfrec_roots:
         tfrec_paths.extend(tf.io.gfile.glob(tfrec_root.rstrip('/') + pattern))
+    tfrec_paths = tfrec_paths[:1]  # FIXME
     print('tfrec paths', tfrec_paths)
     dataset = tf.data.TFRecordDataset(tfrec_paths, num_parallel_reads=AUTO)
     dataset = dataset.with_options(options_no_order)
@@ -38,13 +39,13 @@ def build_dataset(
         partial(transforms.normalize, dtype=dtype), num_parallel_calls=AUTO)
     if drop_filename:
         dataset = dataset.map(transforms.drop_filename, num_parallel_calls=AUTO)
+    if cache:
+        dataset = dataset.cache()
     if is_train:
         dataset = dataset.repeat()
         dataset = dataset.shuffle(4096)
     if batch_size is not None:
         dataset = dataset.batch(batch_size)
-    if cache:
-        dataset = dataset.cache()
     dataset = dataset.prefetch(AUTO)
     return dataset
 
