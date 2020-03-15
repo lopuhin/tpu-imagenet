@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import argparse
-from functools import partial
 from pathlib import Path
 from typing import Dict
 
@@ -22,10 +21,10 @@ def read_jpeg_and_label(filename):
     return image, label, filename
 
 
-def compress_image(image, label, filename):
+def compress_image(image):
     image = tf.cast(image, tf.uint8)
     image = tf.image.encode_jpeg(image, quality=90, optimize_size=True)
-    return image, label, filename
+    return image
 
 
 def to_tfrecord(image_data: bytes, class_num: int, filename: bytes) -> tf.train.Example:
@@ -59,12 +58,14 @@ def get_class_map(train_root: Path) -> Dict[str, int]:
 def prepare_dataset(root: Path, max_size: int):
     dataset = tf.data.Dataset.list_files(
         str(root / '*/*.JPEG'), shuffle=True, seed=42)
-    AUTO = tf.data.experimental.AUTOTUNE
-    dataset = dataset.map(read_jpeg_and_label, num_parallel_calls=AUTO)
-    dataset = dataset.map(partial(resize_image_if_larger, max_size=max_size),
-                          num_parallel_calls=AUTO)
-    dataset = dataset.map(compress_image, num_parallel_calls=AUTO)
-    return dataset
+
+    def process(filename):
+        image, label, filename = read_jpeg_and_label(filename)
+        image = resize_image_if_larger(image, max_size=max_size)
+        image = compress_image(image)
+        return image, label, filename
+
+    return dataset.map(process, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
 
 def main():

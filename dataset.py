@@ -32,10 +32,9 @@ def build_dataset(
 
     def process(filename):
         image, label, filename = read_tfrecord(filename)
-        image, label, filename = transforms.resize_and_crop_image(
-            image, label, filename, target_size=image_size)
-        image, label, filename = transforms.normalize(
-            image, label, filename, dtype=dtype)
+        image = transforms.resize_and_crop_image(
+            image, target_size=image_size)
+        image = transforms.normalize(image, dtype=dtype)
         result = (image, label)
         if not drop_filename:
             result += (filename,)

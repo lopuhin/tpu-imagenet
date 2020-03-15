@@ -3,7 +3,7 @@ from typing import Tuple
 import tensorflow as tf
 
 
-def resize_image_if_larger(image, label, filename, max_size: int):
+def resize_image_if_larger(image, max_size: int):
     """ Resize image to given maximal size, preserving aspect ratio,
     also casts it to float32.
     """
@@ -17,10 +17,10 @@ def resize_image_if_larger(image, label, filename, max_size: int):
             lambda: tf.image.resize(image, [h * max_size/h, w * max_size/h])
         ),
         lambda: image)
-    return image, label, filename
+    return image
 
 
-def resize_and_crop_image(image, label, filename, target_size: Tuple[int, int]):
+def resize_and_crop_image(image, target_size: Tuple[int, int]):
     """ Resize and crop using "fill" algorithm: make sure the resulting image
     is cut out from the source image so that it fills the target_size
     entirely with no black bars and a preserved aspect ratio.
@@ -37,16 +37,12 @@ def resize_and_crop_image(image, label, filename, target_size: Tuple[int, int]):
         image, (nh - th) // 2, (nw - tw) // 2, th, tw)
     # explicit size needed for TPU
     image = tf.reshape(image, [*target_size, 3])
-    return image, label, filename
+    return image
 
 
-def normalize(image, label, filename, dtype):
+def normalize(image, dtype):
     image = tf.cast(image, dtype) / 255.0
-    return image, label, filename
-
-
-def drop_filename(image, label, filename):
-    return image, label
+    return image
 
 
 def _image_hw(image):
