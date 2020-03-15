@@ -36,7 +36,7 @@ Example training command, assuming Kaggle notebook environment with TPU enabled,
     from kaggle_datasets import KaggleDatasets
     gcs_paths = [KaggleDatasets().get_gcs_path(p.name)
                  for p in Path('/kaggle/input/').iterdir()]
-    ! train.py {gcs_path}/imagenet-tfrec-320
+    ! train.py {' '.join(gcs_paths)}
 
 You can check exact dataset paths with ``! gsutil ls SOME_PATH``,
 in case your tfrec files are not on the top level.
