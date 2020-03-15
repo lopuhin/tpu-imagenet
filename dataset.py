@@ -38,7 +38,7 @@ def build_dataset(
         dataset = dataset.map(transforms.drop_filename, num_parallel_calls=AUTO)
     if is_train:
         dataset = dataset.repeat()
-        dataset = dataset.shuffle(2048)
+        dataset = dataset.shuffle(32 * 2048)
     if batch_size is not None:
         dataset = dataset.batch(batch_size)
     if cache:
