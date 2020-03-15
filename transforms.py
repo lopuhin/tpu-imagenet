@@ -40,8 +40,8 @@ def resize_and_crop_image(image, label, filename, target_size: Tuple[int, int]):
     return image, label, filename
 
 
-def normalize(image, label, filename):
-    image = tf.cast(image, tf.float32) / 255.0
+def normalize(image, label, filename, dtype):
+    image = tf.cast(image, dtype) / 255.0
     return image, label, filename
 
 

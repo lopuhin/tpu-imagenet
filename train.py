@@ -36,6 +36,9 @@ def main():
 
     image_size = (args.image_size, args.image_size)
     batch_size = args.batch_size * strategy.num_replicas_in_sync
+    dtype = tf.float32
+    if args.mixed:
+        dtype = tf.bfloat16 if tpu else tf.float16
     train_dataset, valid_dataset = [build_dataset(
         args.tfrec_roots,
         is_train=is_train,
@@ -43,6 +46,7 @@ def main():
         cache=not is_train,
         batch_size=batch_size,
         drop_filename=True,
+        dtype=dtype,
         ) for is_train in [True, False]]
 
     model = build_model(

@@ -13,6 +13,7 @@ def build_dataset(
         tfrec_roots: List[str],
         image_size: Tuple[int, int],
         is_train: bool,
+        dtype=tf.float32,
         batch_size: Optional[int] = None,
         cache: bool = False,
         drop_filename: bool = True,
@@ -33,7 +34,8 @@ def build_dataset(
     dataset = dataset.map(
         partial(transforms.resize_and_crop_image, target_size=image_size),
         num_parallel_calls=AUTO)
-    dataset = dataset.map(transforms.normalize, num_parallel_calls=AUTO)
+    dataset = dataset.map(
+        partial(transforms.normalize, dtype=dtype), num_parallel_calls=AUTO)
     if drop_filename:
         dataset = dataset.map(transforms.drop_filename, num_parallel_calls=AUTO)
     if is_train:
