@@ -27,8 +27,7 @@ def build_dataset(
     for tfrec_root in tfrec_roots:
         tfrec_paths.extend(tf.io.gfile.glob(tfrec_root.rstrip('/') + pattern))
     print('tfrec paths', tfrec_paths)
-    dataset = tf.data.TFRecordDataset(
-        tfrec_paths, buffer_size=2**20 * 10, num_parallel_reads=8)
+    dataset = tf.data.TFRecordDataset(tfrec_paths, num_parallel_reads=AUTO)
     dataset = dataset.with_options(options_no_order)
     dataset = dataset.map(read_tfrecord, num_parallel_calls=AUTO)
     dataset = dataset.map(
@@ -39,7 +38,7 @@ def build_dataset(
         dataset = dataset.map(transforms.drop_filename, num_parallel_calls=AUTO)
     if is_train:
         dataset = dataset.repeat()
-        dataset = dataset.shuffle(32 * 2048)
+        dataset = dataset.shuffle(64 * 2048)
     if batch_size is not None:
         dataset = dataset.batch(batch_size)
     if cache:
