@@ -27,7 +27,8 @@ def build_dataset(
     for tfrec_root in tfrec_roots:
         tfrec_paths.extend(tf.io.gfile.glob(tfrec_root.rstrip('/') + pattern))
     print('tfrec paths', tfrec_paths)
-    dataset = tf.data.TFRecordDataset(tfrec_paths, num_parallel_reads=AUTO)
+    dataset = tf.data.TFRecordDataset(
+        tfrec_paths, buffer_size=2**20 * 100, num_parallel_reads=32)
     dataset = dataset.with_options(options_no_order)
     dataset = dataset.map(read_tfrecord, num_parallel_calls=AUTO)
     dataset = dataset.map(
