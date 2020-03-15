@@ -27,7 +27,6 @@ def build_dataset(
     tfrec_paths = []
     for tfrec_root in tfrec_roots:
         tfrec_paths.extend(tf.io.gfile.glob(tfrec_root.rstrip('/') + pattern))
-    tfrec_paths = tfrec_paths[:1]  # FIXME
     print('tfrec paths', tfrec_paths)
     dataset = tf.data.TFRecordDataset(tfrec_paths, num_parallel_reads=AUTO)
     dataset = dataset.with_options(options_no_order)
