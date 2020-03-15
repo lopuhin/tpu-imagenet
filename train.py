@@ -65,10 +65,11 @@ def main():
     # TODO L2 weight decay
     model.fit(
         train_dataset,
-        validation_data=valid_dataset,
         steps_per_epoch=args.n_train_samples // batch_size,
         epochs=args.epochs,
         callbacks=[lr_callback],
+        validation_freq=4,
+        validation_data=valid_dataset,
     )
 
 
